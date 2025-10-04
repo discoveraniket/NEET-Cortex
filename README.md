@@ -1,4 +1,4 @@
-# NEET PREP Project
+# NEET-Cortex Project
 
 This repository contains a collection of tools and data for NEET (National Eligibility cum Entrance Test) preparation.
 
