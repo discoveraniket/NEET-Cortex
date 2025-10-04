@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question Renderer</title>
+    <!-- KaTeX CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+    <!-- markdown-it JS -->
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it@latest/dist/markdown-it.min.js"></script>
+    <!-- KaTeX JS -->
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.5; /* Slightly reduced line-height */
+            margin: 0;
+            padding: 10px; /* Reduced padding */
+            background-color: #ffffff;
+            color: #000000;
+        }
+        /* Reduce vertical spacing for paragraphs and lists */
+        p, ol {
+            margin-block-start: 0.5em;
+            margin-block-end: 0.5em;
+        }
+        /* Basic table styling */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 1em;
+            margin-bottom: 1em;
+        }
+        th, td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        /* Code block styling */
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        }
+    </style>
+</head>
+<body>
+    <div id="content"></div>
+
+    <!-- The raw Markdown/LaTeX content will be injected here by the Python application -->
+    <script id="raw-data" type="text/plain">__CONTENT_PLACEHOLDER__</script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // 1. Initialize markdown-it
+            const md = window.markdownit({ html: true });
+
+            // 2. Get the raw content from the placeholder script tag
+            const rawContent = document.getElementById('raw-data').textContent;
+
+            // 3. Render Markdown to HTML
+            const htmlContent = md.render(rawContent);
+
+            // 4. Set the rendered HTML into the main content div
+            const contentDiv = document.getElementById('content');
+            contentDiv.innerHTML = htmlContent;
+
+            // 5. Instruct KaTeX to render any math in the content div
+            renderMathInElement(contentDiv, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\(', right: '\)', display: false},
+                    {left: '\[', right: '\]', display: true}
+                ],
+                throwOnError: false
+            });
+        });
+    </script>
+</body>
+</html>
