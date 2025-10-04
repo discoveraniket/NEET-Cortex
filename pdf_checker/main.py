@@ -262,9 +262,9 @@ def main() -> None:
     # default_ocr = None
     
     # Define default file paths for easy modification
-    default_pdf = script_dir / ".." / "PYQ" / "BIO" / "pdf" / "2018.pdf"
-    default_bbox = script_dir / ".." / "PYQ" / "BIO" / "json" / "bbox" /"2018_bbox.json"
-    default_ocr = script_dir / ".." / "PYQ" / "BIO" / "json" / "2018.json"
+    default_pdf = script_dir / ".." / "Data"/ "PYQ" / "BIO" / "pdf" / "2018.pdf"
+    default_bbox = script_dir / ".." / "Data"/ "PYQ" / "BIO" / "json" / "bbox" /"2018_bbox.json"
+    default_ocr = script_dir / ".."  / "Data"/ "PYQ" / "BIO" / "json" / "2018.json"
 
 
     # Parse and validate arguments
