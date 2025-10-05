@@ -5,10 +5,16 @@ This module serves as the main entry point for the PDF Checker application,
 which provides question viewing and OCR correction functionality.
 """
 
+import os
 import sys
 from pathlib import Path
 from typing import List, Tuple
 from PySide6.QtWidgets import QApplication
+
+# Add the project root to the Python path to allow for absolute imports
+project_root = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.dirname(project_root)) # Add parent of pdf_checker to path
+sys.path.insert(0, project_root) # Add pdf_checker to path
 
 from pdf_checker.app.presenter import AppPresenter
 from pdf_checker.ui.main_view import MainView
