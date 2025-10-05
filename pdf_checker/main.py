@@ -8,7 +8,7 @@ which provides question viewing and OCR correction functionality.
 import os
 import sys
 from pathlib import Path
-from typing import List, Tuple
+from typing import Optional
 from PySide6.QtWidgets import QApplication
 
 # Add the project root to the Python path to allow for absolute imports
@@ -22,82 +22,8 @@ from pdf_checker.data.data_manager import DataManager
 from pdf_checker.data.question_manager import QuestionManager
 from pdf_checker.utils.path_manager import PathManager
 from pdf_checker.app.error_handler import ErrorHandler
-class ApplicationBuilder:
-    """Builds and configures the application components."""
-    
-    def __init__(self, pdf_path: Path, bbox_path: Path, ocr_path: Path, image_dir: Path):
-        self.pdf_path = pdf_path
-        self.bbox_path = bbox_path
-        self.ocr_path = ocr_path
-        self.image_dir = image_dir
-    
-    def build(self) -> Tuple[QApplication, AppPresenter, MainView]:
-        """
-        Build and connect all application components.
-        
-        Returns:
-            Tuple containing (QApplication, AppPresenter, MainView)
-            
-        Raises:
-            Exception: If any component fails to initialize
-        """
-        # Create Qt Application
-        app = QApplication(sys.argv)
-        
-        # Create managers and utilities
-        data_manager = DataManager(
-            str(self.pdf_path), 
-            str(self.bbox_path), 
-            str(self.ocr_path)
-        )
-        question_manager = QuestionManager(data_manager)
-        path_manager = PathManager(str(self.pdf_path.parent))
-        
-        # Create and configure the View
-        view = MainView()
-        
-        # Create and configure the Presenter
-        presenter = AppPresenter(
-            view, 
-            question_manager, 
-            data_manager, 
-            path_manager, 
-            str(self.image_dir)
-        )
-        
-        # Connect components
-        view.set_presenter(presenter)
-        
-        return app, presenter, view
+from pdf_checker.app.session_manager import SessionManager
 
-def run_application(pdf_path: Path, bbox_path: Path, ocr_path: Path, image_dir: Path) -> int:
-    """
-    Run the main application.
-    
-    Args:
-        pdf_path: Path to PDF file
-        bbox_path: Path to bounding box JSON file
-        ocr_path: Path to OCR JSON file
-        image_dir: Path to image directory
-        
-    Returns:
-        Application exit code
-    """
-    try:
-        # Build application components
-        app_builder = ApplicationBuilder(pdf_path, bbox_path, ocr_path, image_dir)
-        app, presenter, view = app_builder.build()
-        
-        # Start application logic and show view
-        presenter.start()
-        view.showMaximized()
-        
-        # Start Qt event loop
-        return app.exec()
-        
-    except Exception as e:
-        ErrorHandler.handle_error(f"Failed to start application: {e}", exception=e)
-        return 1
 
 def main() -> None:
     """
@@ -105,23 +31,56 @@ def main() -> None:
     
     Orchestrates the application setup, validation, and execution.
     """
-    # Get script directory and set up application
+    # 1. Basic application setup
+    ErrorHandler.setup_logging()
+    app = QApplication(sys.argv)
+
+    # 2. Get script directory and set up paths
     script_dir = Path(__file__).parent
     project_root = script_dir.parent
-    sys.path.insert(0, str(project_root))
-    sys.path.insert(0, str(script_dir))
-
-    ErrorHandler.setup_logging()
-
-    # Define default file paths for easy modification
-    pdf_path = project_root / "Data"/ "PYQ" / "BIO" / "pdf" / "2018.pdf"
-    bbox_path = project_root / "Data"/ "PYQ" / "BIO" / "json" / "bbox" /"2018_bbox.json"
-    ocr_path = project_root / "Data"/ "PYQ" / "BIO" / "json" / "2018.json"
-    image_dir = project_root / "Data"/ "PYQ" / "BIO" / "json" / "images"
     
-    # Run the application
-    exit_code = run_application(pdf_path, bbox_path, ocr_path, image_dir)
-    sys.exit(exit_code)
+    # 3. Initialize components in a "blank" state
+    view = MainView()
+    session_manager = SessionManager(script_dir / "session.json")
+    
+    # Create managers with an initial empty state
+    data_manager = DataManager(None, None, None)
+    question_manager = QuestionManager(data_manager)
+    path_manager = PathManager(str(project_root)) # Path manager might need a base path
+    image_dir = project_root / "Data"/ "PYQ" / "BIO" / "json" / "images"
+
+    # Create the presenter
+    presenter = AppPresenter(
+        view,
+        question_manager,
+        data_manager,
+        path_manager,
+        str(image_dir),
+        session_manager=session_manager,
+        initial_question_index=0 # Start at 0, will be updated by session
+    )
+    view.set_presenter(presenter)
+
+    # 4. Set up exit behavior
+    app.aboutToQuit.connect(presenter.save_session)
+
+    # 5. Show the main window
+    view.showMaximized()
+
+    # 6. Load last session if it exists
+    session = session_manager.load_session()
+    if session and "ocr_json_path" in session:
+        ocr_path = Path(session["ocr_json_path"])
+        if ocr_path.exists():
+            initial_question_index = session.get("last_question_index", 0)
+            # Presenter's load_files will handle creating new data/question managers and showing the right question
+            presenter.load_files(ocr_path, initial_question_index)
+        else:
+            view.show_message("Session Error", f"Could not find the last used file: {ocr_path}", msg_type="error")
+
+    # 7. Start the Qt event loop
+    sys.exit(app.exec())
+
 
 if __name__ == "__main__":
     main()

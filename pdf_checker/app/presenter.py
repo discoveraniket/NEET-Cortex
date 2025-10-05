@@ -1,4 +1,3 @@
-from typing import Dict
 import os
 from typing import Dict
 import fitz # PyMuPDF
@@ -10,45 +9,38 @@ from data.validator import DataValidator
 from utils.path_manager import PathManager
 from app.error_handler import ErrorHandler
 from app.config import Config
+from app.session_manager import SessionManager
 
 class AppPresenter:
     """Handles the application logic and acts as a presenter in an MVP pattern."""
 
-    def __init__(self, view, question_manager: QuestionManager, data_manager: DataManager, path_manager: PathManager, image_dir: str):
+    def __init__(self, view, question_manager: QuestionManager, data_manager: DataManager, path_manager: PathManager, image_dir: str, session_manager: SessionManager, initial_question_index: int = 0):
         self.view = view
         self.question_manager = question_manager
         self.data_manager = data_manager
         self.path_manager = path_manager
         self.image_dir = image_dir
+        self.session_manager = session_manager
+        self.initial_question_index = initial_question_index
         self.app_config = Config()
         self.project_root = self.path_manager.base_dir.parent.parent.parent
         self.view.set_project_root(self.project_root)
 
-    def load_files(self, ocr_json_path: Path):
+    def load_files(self, ocr_json_path: Path, initial_question_index: int = 0):
         """
         Load PDF, OCR JSON, and Bbox JSON files based on the provided OCR JSON path.
         """
         try:
             ocr_json_path = Path(ocr_json_path)
             
-            # Deduce PDF path from a file like NEET_2024_BIO.json
-            stem = ocr_json_path.stem
-            stem_parts = stem.split('_')
-            
-            if len(stem_parts) > 1:
-                year = stem_parts[1] # Assumes format like XXX_YYYY_...
-            else:
-                year = stem # Assumes format is just YYYY
-            
-            # Further check if year is a valid year
-            if not year.isdigit() or len(year) != 4:
-                self.view.show_message("Error", f"Could not determine year from filename: {ocr_json_path.name}", msg_type="error")
-                return
-            # Assumes the pdf is in a parent directory of the json file's location
-            pdf_path = next(ocr_json_path.parent.parent.parent.rglob(f"NEET_{year}.pdf"))
+            # Derive other paths relative to the OCR JSON path
+            year_stem = ocr_json_path.stem
+            json_dir = ocr_json_path.parent
+            # Assuming a structure like .../Data/PYQ/BIO/json/{year}.json
+            bio_dir = json_dir.parent 
 
-            # Deduce Bbox JSON path
-            bbox_json_path = ocr_json_path.with_name(f"{ocr_json_path.stem}_bbox.json")
+            pdf_path = bio_dir / "pdf" / f"{year_stem}.pdf"
+            bbox_json_path = json_dir / "bbox" / f"{year_stem}_bbox.json"
 
             if not pdf_path.exists():
                 self.view.show_message("Error", f"PDF file not found: {pdf_path}", msg_type="error")
@@ -62,19 +54,21 @@ class AppPresenter:
             self.data_manager = DataManager(str(pdf_path), str(bbox_json_path), str(ocr_json_path))
             self.question_manager = QuestionManager(self.data_manager)
             
+            # Update the initial index before starting
+            self.initial_question_index = initial_question_index
+
             # Restart the application with the new data
             self.start()
 
-        except StopIteration:
-            self.view.show_message("Error", f"Could not find PDF for year {year}", msg_type="error")
         except Exception as e:
+            from app.error_handler import ErrorHandler
             ErrorHandler.handle_error(f"Failed to load files: {e}", show_message=False)
             self.view.show_message("Error", f"An error occurred while loading files: {e}", msg_type="error")
 
     def start(self):
         """Initializes the application state and displays the first question."""
         if not self.data_manager.load_all_data():
-            self.view.destroy()
+            self.view.show_message("Error", "Failed to load file data. Please check file paths and integrity.", msg_type="error")
             return
 
         if not self.question_manager.initialize_questions():
@@ -82,7 +76,18 @@ class AppPresenter:
             return
 
         self.view.populate_question_list(self.question_manager.question_keys)
-        self._show_question(0)
+        self._show_question(self.initial_question_index)
+
+    def save_session(self):
+        """Saves the current session details if a file is loaded."""
+        if self.data_manager and self.data_manager.ocr_json_path:
+            current_index = self.question_manager.current_question_index
+            self.session_manager.save_session(self.data_manager.ocr_json_path, current_index)
+
+    def go_to_question_by_index(self, index: int):
+        """Navigates to a specific question by its list index."""
+        if 0 <= index < len(self.question_manager.question_keys):
+            self._show_question(index)
 
     def _show_question(self, index: int):
         if not self.question_manager.go_to_question(index):
