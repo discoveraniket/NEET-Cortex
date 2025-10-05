@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 ################################################################################
-## Form generated from reading UI file 'main_uiitxgpz.ui'
+## Form generated from reading UI file 'main_ui.ui'
 ##
 ## Created by: Qt User Interface Compiler version 6.9.2
 ##
@@ -308,10 +308,10 @@ class Ui_MainWindow(object):
 
         self.editor_metadata_gridLayout.addWidget(self.lbl_editor_answer, 0, 0, 1, 1)
 
-        self.lineEdit = QLineEdit(self.questionEditorFrame)
-        self.lineEdit.setObjectName(u"lineEdit")
+        self.le_editor_remark = QLineEdit(self.questionEditorFrame)
+        self.le_editor_remark.setObjectName(u"le_editor_remark")
 
-        self.editor_metadata_gridLayout.addWidget(self.lineEdit, 0, 3, 1, 1)
+        self.editor_metadata_gridLayout.addWidget(self.le_editor_remark, 0, 3, 1, 1)
 
         self.lbl_remark = QLabel(self.questionEditorFrame)
         self.lbl_remark.setObjectName(u"lbl_remark")

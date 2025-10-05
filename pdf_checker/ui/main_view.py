@@ -178,6 +178,7 @@ class MainView(QMainWindow):
         
         self.ui.le_editor_answer.setText(str(ocr_data.get("correctOption", "")))
         self.ui.le_editor_imagePath.setText(ocr_data.get("imagePath", ""))
+        self.ui.le_editor_remark.setText(ocr_data.get("remark", ""))
         
         # Update table data
         match_data = ocr_data.get("matchColumns")
@@ -217,6 +218,7 @@ class MainView(QMainWindow):
             ],
             'correctOption': self.ui.le_editor_answer.text(),
             'imagePath': self.ui.le_editor_imagePath.text(),
+            'remark': self.ui.le_editor_remark.text(),
             'matchColumns': self.table_manager.get_table_data()
         }
         return data

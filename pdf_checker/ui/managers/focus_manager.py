@@ -12,8 +12,7 @@ class FocusManager:
             main_view.ui.editor_option3_lineEdit,
             main_view.ui.editor_option4_lineEdit,
             main_view.ui.le_editor_answer,
-            main_view.ui.lineEdit,
-            main_view.ui.spinBox_goto_question
+            main_view.ui.le_editor_remark,
         ]
         self._install_event_filters()
     
